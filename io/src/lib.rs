@@ -43,6 +43,7 @@ pub enum PebblesAction {
 pub enum PebblesEvent {
     CounterTurn(u32),
     Won(Player),
+    InvalidTurn
 }
 
 #[derive(Debug, Default, Clone, Encode, Decode, TypeInfo)]
