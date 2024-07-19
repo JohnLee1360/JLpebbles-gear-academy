@@ -3,7 +3,7 @@ use pebbles_game_io::*;
 use gstd::prelude::*;
 
 #[test]
-fn test(){
+fn test_easy(){
     let sys = System::new();
     sys.init_logger();
     let program = Program::current(&sys);
@@ -14,7 +14,7 @@ fn test(){
     let result = program.send(
         user_id,
         PebblesInit {
-            difficulty: DifficultyLevel::Easy,
+            difficulty: DifficultyLevel::Hard,
             pebbles_count: 15,
             max_pebbles_per_turn: 3,
         },
@@ -44,7 +44,11 @@ fn test(){
 
     // check game state 
     let state: GameState = program.read_state(()).expect("Failed to read state");
-    assert_eq!(state.pebbles_remaining, 12);
+    assert_eq!(state.pebbles_remaining, 9);
+
+    //player wins
+    let log = Log::builder().source(program.id()).dest(user_id).payload(PebblesEvent::Won(Player::User));
+    println!("Expected log: {:?}", log);
 
     // player quit
     let res = program.send(user_id, PebblesAction::GiveUp);
@@ -75,4 +79,43 @@ fn test(){
 
     let hard_difficulty = DifficultyLevel::Hard;
     println!("{:?}", hard_difficulty); // ouput：Hard
+}
+
+#[test]
+fn test_hard(){
+    let sys = System::new();
+    sys.init_logger();
+    let program = Program::current(&sys);
+
+    let user_id: u64 = 100001;
+
+    // Init game（10 pebbles，3 pebbles per turn at most，hard）
+    let result = program.send(
+        user_id,
+        PebblesInit {
+            difficulty: DifficultyLevel::Hard,
+            pebbles_count: 4,
+            max_pebbles_per_turn: 1,
+        },
+    );
+
+    // Iinit game
+    assert!(!result.main_failed());
+
+    // player turn 1
+    let state: GameState = program.read_state(()).expect("Failed to read state");
+    println!("{:?}", state.pebbles_remaining);
+    let res = program.send(user_id, PebblesAction::Turn(1));
+    assert!(!res.main_failed());
+    let state: GameState = program.read_state(()).expect("Failed to read state");
+    println!("{:?}", state.pebbles_remaining);
+
+    let res = program.send(user_id, PebblesAction::Turn(1));
+    assert!(!res.main_failed());
+    let state: GameState = program.read_state(()).expect("Failed to read state");
+    println!("{:?}", state.pebbles_remaining);
+
+    // check game state
+    let state: GameState = program.read_state(()).expect("Failed to read state");
+    println!("{:?}", state.winner);
 }
